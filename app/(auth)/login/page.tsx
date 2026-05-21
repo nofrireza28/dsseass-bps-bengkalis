@@ -42,19 +42,19 @@ export default function LoginPage() {
           <h1 className="text-4xl font-bold leading-tight">
             Sistem Pendukung Keputusan
             <br />
-            <span className="text-bps-accent">Pemilihan Pegawai Terbaik</span>
+            <span className="text-bps-accent">Penilaian Pegawai Terbaik</span>
           </h1>
           <p className="text-lg text-blue-100 max-w-md">
             Badan Pusat Statistik Kabupaten Bengkalis
           </p>
-          <div className="pt-4 border-t border-white/20">
+          {/* <div className="pt-4 border-t border-white/20">
             <p className="text-sm text-blue-100/80 max-w-md leading-relaxed">
               Menggunakan metode{" "}
               <strong>Simple Additive Weighting (SAW)</strong> untuk perhitungan
               ranking pegawai yang objektif, transparan, dan dapat
               dipertanggungjawabkan.
             </p>
-          </div>
+          </div> */}
         </div>
 
         {/* Footer */}
