@@ -14,47 +14,58 @@ export default function LoginPage() {
         </div>
 
         {/* Logos */}
-        <div className="relative z-10 flex items-center gap-4">
-          <div className="bg-white rounded-full p-2 shadow-lg">
+        <div className="relative z-10">
+          <div className=" inline-block bg-white rounded-full p-2 shadow-lg">
             <Image
               src="/logos/bps-logo.png"
               alt="Logo BPS"
               width={64}
               height={64}
-              style={{ width: 'auto', height: '64px' }}
-              className="object-contain"
-            />
-          </div>
-          <div className="bg-white rounded-full p-2 shadow-lg">
-            <Image
-              src="/logos/bengkalis-logo.png"
-              alt="Logo Kabupaten Bengkalis"
-              width={64}
-              height={64}
-              style={{ width: 'auto', height: '64px' }}
+              style={{ width: "auto", height: "64px" }}
               className="object-contain"
             />
           </div>
         </div>
 
         {/* Branding text */}
-        <div className="relative z-10 space-y-4">
-          <h1 className="text-4xl font-bold leading-tight">
-            Sistem Pendukung Keputusan
-            <br />
-            <span className="text-bps-accent">Penilaian Pegawai Terbaik</span>
-          </h1>
-          <p className="text-lg text-blue-100 max-w-md">
-            Badan Pusat Statistik Kabupaten Bengkalis
-          </p>
-          {/* <div className="pt-4 border-t border-white/20">
-            <p className="text-sm text-blue-100/80 max-w-md leading-relaxed">
+        <div className="relative z-10 space-y-6">
+          <div className="flex items-center gap-6">
+            {/* Logo Bengkalis - besar di samping judul */}
+            <div className="bg-white rounded-full p-3 shadow-lg shrink-0">
+              <Image
+                src="/logos/bengkalis-logo.png"
+                alt="Logo Kabupaten Bengkalis"
+                width={120}
+                height={120}
+                style={{ width: "auto", height: "110px" }}
+                className="object-contain"
+              />
+            </div>
+
+            {/* Judul + subtitle */}
+            <div className="space-y-2">
+              <h1 className="text-3xl xl:text-4xl font-bold leading-tight">
+                Sistem Pendukung Keputusan
+                <br />
+                <span className="text-bps-accent">
+                  Pemilihan Pegawai Terbaik
+                </span>
+              </h1>
+              <p className="text-base xl:text-lg text-blue-100">
+                Badan Pusat Statistik Kabupaten Bengkalis
+              </p>
+            </div>
+          </div>
+
+          {/* Deskripsi metode SAW */}
+          <div className="pt-4 border-t border-white/20">
+            <p className="text-sm text-blue-100/80 max-w-2xl leading-relaxed">
               Menggunakan metode{" "}
               <strong>Simple Additive Weighting (SAW)</strong> untuk perhitungan
               ranking pegawai yang objektif, transparan, dan dapat
               dipertanggungjawabkan.
             </p>
-          </div> */}
+          </div>
         </div>
 
         {/* Footer */}
@@ -74,7 +85,7 @@ export default function LoginPage() {
                 alt="Logo BPS"
                 width={48}
                 height={48}
-                style={{ width: 'auto', height: '48px' }}
+                style={{ width: "auto", height: "48px" }}
                 className="object-contain"
               />
             </div>
@@ -84,7 +95,7 @@ export default function LoginPage() {
                 alt="Logo Kabupaten Bengkalis"
                 width={48}
                 height={48}
-                style={{ width: 'auto', height: '48px' }}
+                style={{ width: "auto", height: "48px" }}
                 className="object-contain"
               />
             </div>
