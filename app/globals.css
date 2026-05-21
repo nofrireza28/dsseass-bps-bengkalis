@@ -81,6 +81,12 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+
+  /* Custom BPS Theme Colors */
+  --bps-primary: 210 100% 22%;        /* Navy Blue #003B71 */
+  --bps-primary-light: 210 65% 35%;   /* Lighter Blue */
+  --bps-accent: 41 92% 60%;           /* Gold / Yellow #F7B538 */
+  --bps-bg-gradient: linear-gradient(135deg, #003B71 0%, #1E5A8F 100%);
 }
 
 .dark {
@@ -126,5 +132,23 @@
   }
   html {
     @apply font-sans;
+  }
+}
+
+@layer utilities {
+  .bg-bps-primary {
+    background-color: hsl(var(--bps-primary));
+  }
+  .bg-bps-gradient {
+    background: var(--bps-bg-gradient);
+  }
+  .text-bps-primary {
+    color: hsl(var(--bps-primary));
+  }
+  .text-bps-accent {
+    color: hsl(var(--bps-accent));
+  }
+  .border-bps-primary {
+    border-color: hsl(var(--bps-primary));
   }
 }

@@ -5,7 +5,30 @@ export const authConfig = {
     signIn: "/login",
     error: "/login",
   },
+  session: {
+    strategy: 'jwt',
+    maxAge: 60 * 60 * 24 * 7
+  },
   callbacks: {
+    async jwt({ token, user }) {
+      // Saat login pertama, parameter `user` tersedia dari authorize()
+      // Kita simpan ke token agar persist di JWT cookie
+      if (user) {
+        token.employeeId = user.employeeId ?? null;
+        token.roles = user.roles ?? [];
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      // Setiap request, copy data dari token ke session
+      // Ini yang membuat session.user.roles dapat diakses
+      if (session.user && token.sub) {
+        session.user.id = token.sub;
+        session.user.employeeId = token.employeeId ?? null;
+        session.user.roles = token.roles ?? [];
+      }
+      return session;
+    },
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
       const isOnLoginPage = nextUrl.pathname === "/login";

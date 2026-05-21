@@ -1,12 +1,12 @@
-import NextAuth from 'next-auth';
-import Credentials from 'next-auth/providers/credentials';
-import bcrypt from 'bcryptjs';
-import { z } from 'zod';
-import { eq } from 'drizzle-orm';
+import NextAuth from "next-auth";
+import Credentials from "next-auth/providers/credentials";
+import bcrypt from "bcryptjs";
+import { z } from "zod";
+import { eq } from "drizzle-orm";
 
-import { authConfig } from './auth.config';
-import { db } from './db';
-import { users, employees, userRoles, roles } from './db/schema';
+import { authConfig } from "./auth.config";
+import { db } from "./db";
+import { users, employees, userRoles, roles } from "./db/schema";
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -49,7 +49,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!userData.isActive) return null;
 
         // Validasi password
-        const passwordValid = await bcrypt.compare(password, userData.passwordHash);
+        const passwordValid = await bcrypt.compare(
+          password,
+          userData.passwordHash,
+        );
         if (!passwordValid) return null;
 
         // Kumpulkan semua role (karena hasil join bisa multiple rows)
@@ -73,28 +76,4 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       },
     }),
   ],
-  callbacks: {
-    ...authConfig.callbacks,
-    async jwt({ token, user }) {
-      // Saat login pertama kali, parameter user tersedia dari authorize()
-      if (user) {
-        token.employeeId = user.employeeId ?? null;
-        token.roles = user.roles ?? [];
-      }
-      return token;
-    },
-    async session({ session, token }) {
-      // Inject data dari token ke session
-      if (session.user && token.sub) {
-        session.user.id = token.sub;
-        session.user.employeeId = token.employeeId ?? null;
-        session.user.roles = token.roles ?? [];
-      }
-      return session;
-    },
-  },
-  session: {
-    strategy: 'jwt',
-    maxAge: 60 * 60 * 24 * 7, // 7 hari
-  },
 });
