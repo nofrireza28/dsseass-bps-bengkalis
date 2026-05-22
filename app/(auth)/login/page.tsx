@@ -15,7 +15,7 @@ export default function LoginPage() {
 
         {/* Logos */}
         <div className="relative z-10">
-          <div className=" inline-block bg-white rounded-full p-2 shadow-lg">
+          <div className=" inline-block bg-transparent p-2">
             <Image
               src="/logos/bps-logo.png"
               alt="Logo BPS"
@@ -31,7 +31,7 @@ export default function LoginPage() {
         <div className="relative z-10 space-y-6">
           <div className="flex items-center gap-6">
             {/* Logo Bengkalis - besar di samping judul */}
-            <div className="bg-white rounded-full p-3 shadow-lg shrink-0">
+            <div className="bg-transparent p-3 shrink-0">
               <Image
                 src="/logos/bengkalis-logo.png"
                 alt="Logo Kabupaten Bengkalis"
@@ -60,10 +60,10 @@ export default function LoginPage() {
           {/* Deskripsi metode SAW */}
           <div className="pt-4 border-t border-white/20">
             <p className="text-sm text-blue-100/80 max-w-2xl leading-relaxed">
-              Menggunakan metode{" "}
+              {/* Menggunakan metode{" "}
               <strong>Simple Additive Weighting (SAW)</strong> untuk perhitungan
               ranking pegawai yang objektif, transparan, dan dapat
-              dipertanggungjawabkan.
+              dipertanggungjawabkan. */}
             </p>
           </div>
         </div>
