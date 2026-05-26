@@ -17,6 +17,8 @@ export default async function PimpinanLayout({
           userName={session.user.name ?? "Pimpinan"}
           userEmail={session.user.email ?? ""}
           roleLabel="Pimpinan"
+          userRoles={session.user.roles ?? []}
+          currentRole="PIMPINAN"
         />
         <main className="flex-1 overflow-y-auto p-6">{children}</main>
       </div>

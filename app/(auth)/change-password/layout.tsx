@@ -30,6 +30,8 @@ export default async function ChangePasswordLayout({
           userName={session.user.name ?? "User"}
           userEmail={session.user.email ?? ""}
           roleLabel={roleLabel}
+          userRoles={userRoles}
+          currentRole={role}
         />
         <main className="flex-1 overflow-y-auto p-6">{children}</main>
       </div>

@@ -17,6 +17,8 @@ export default async function AdminLayout({
           userName={session.user.name ?? "Admin"}
           userEmail={session.user.email ?? ""}
           roleLabel="Administrator"
+          userRoles={session.user.roles ?? []}
+          currentRole="ADMIN"
         />
         <main className="flex-1 overflow-y-auto p-6">{children}</main>
       </div>

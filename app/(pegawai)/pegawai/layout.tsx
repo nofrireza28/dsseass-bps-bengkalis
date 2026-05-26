@@ -17,6 +17,8 @@ export default async function PegawaiLayout({
           userName={session.user.name ?? "Pegawai"}
           userEmail={session.user.email ?? ""}
           roleLabel="Pegawai"
+          userRoles={session.user.roles ?? []}
+          currentRole="PEGAWAI"
         />
         <main className="flex-1 overflow-y-auto p-6">{children}</main>
       </div>

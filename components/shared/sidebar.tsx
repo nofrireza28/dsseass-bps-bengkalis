@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
   Users,
+  KeyRound,
   Sliders,
   Calendar,
   ClipboardList,
@@ -35,6 +36,7 @@ const MENU_BY_ROLE: Record<SidebarRole, MenuItem[]> = {
   ADMIN: [
     { label: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
     { label: "Pegawai", href: "/admin/pegawai", icon: Users },
+    { label: "Akun Pengguna", href: "/admin/akun", icon: KeyRound },
     { label: "Kriteria", href: "/admin/kriteria", icon: Sliders },
     { label: "Periode", href: "/admin/periode", icon: Calendar },
     { label: "Perhitungan", href: "/admin/perhitungan", icon: Calculator },
