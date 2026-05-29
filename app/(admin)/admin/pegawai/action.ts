@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db";
-import { employees } from "@/db/schema";
+import { employees, users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 // import { redirect } from "next/navigation";
@@ -154,6 +154,16 @@ export async function deactivateEmployeeAction(
   await requireRole(["ADMIN"]);
 
   try {
+    // Ambil employee untuk dapat user id
+    const employee = await db.query.employees.findFirst({
+      where: eq(employees.id, employeeId),
+    });
+
+    if (!employee) {
+      return { success: false, error: "Pegawai tidak ditemukan" };
+    }
+
+    // Nonaktifkan employee
     await db
       .update(employees)
       .set({
@@ -163,7 +173,19 @@ export async function deactivateEmployeeAction(
       })
       .where(eq(employees.id, employeeId));
 
+    // Sinkronkan juga untuk nonaktifkan user terkait kalau ada
+    if (employee.userId) {
+      await db
+        .update(users)
+        .set({
+          isActive: false,
+          updatedAt: new Date(),
+        })
+        .where(eq(users.id, employee.userId));
+    }
+
     revalidatePath("/admin/pegawai");
+    revalidatePath("/admin/akun");
     return { success: true, employeeId };
   } catch (error) {
     console.error("Failed to deacativate employee:", error);
@@ -172,7 +194,8 @@ export async function deactivateEmployeeAction(
 }
 
 /**
- * Ractivate employee
+ * Ractivate employee - tidak auto-reactivate akun
+ * Admin harus aktifkan akun secara terpisah jika diperlukan
  */
 export async function reactivateEmployeeAction(
   employeeId: string,

@@ -9,7 +9,7 @@ import { db } from "./db";
 import { users, employees, userRoles, roles } from "./db/schema";
 
 const loginSchema = z.object({
-  email: z.string().email(),
+  email: z.email(),
   password: z.string().min(6),
 });
 
@@ -54,6 +54,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           userData.passwordHash,
         );
         if (!passwordValid) return null;
+
+        // Ambil data employee terkait
+        const employee = await db.query.employees.findFirst({
+          where: eq(employees.userId, userData.userId),
+        });
+
+        // Tolak login kalau pegawai terkait sudah INACTIVE
+        if (employee && employee.status === "INACTIVE") {
+          return null;
+        }
 
         // Kumpulkan semua role (karena hasil join bisa multiple rows)
         const userRolesList = result

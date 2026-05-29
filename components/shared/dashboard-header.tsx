@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import { logoutAction } from "@/app/(auth)/logout/action";
+import Link from "next/link";
 
 interface DashboardHeaderProps {
   userName: string;
@@ -77,6 +78,8 @@ export function DashboardHeader({
     .toUpperCase();
 
   const hasMultipleRoles = userRoles.length > 1;
+
+  const changePasswordUrl = `/${currentRole.toLowerCase()}/change-password`;
 
   return (
     <header className="h-16 bg-white border-b flex items-center justify-between px-4 lg:px-6">
@@ -149,10 +152,14 @@ export function DashboardHeader({
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-              <a href="/change-password" className="cursor-pointer">
+              {/* <a href="/change-password" className="cursor-pointer">
                 <User className="mr-2 h-4 w-4" />
                 Ubah Password
-              </a>
+              </a> */}
+              <Link href={changePasswordUrl} className="cursor-pointer">
+                <User className="mr-2 h4 w-4" />
+                Ubah Password
+              </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
