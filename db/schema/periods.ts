@@ -6,6 +6,7 @@ import {
   text,
   timestamp,
   boolean,
+  integer,
   primaryKey,
   check,
   index,
@@ -17,11 +18,17 @@ export const evaluationPeriods = pgTable(
   "evaluation_periods",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    name: varchar("name", { length: 100 }).notNull(),
+    name: varchar("name", { length: 255 }).notNull(),
+    periodType: varchar("period_type", { length: 20 })
+      .notNull()
+      .default("QUARTERLY"),
+    year: integer("year").notNull(),
+    periodIndex: integer("period_index"),
     description: text("description"),
     startDate: date("start_date").notNull(),
     endDate: date("end_date").notNull(),
-    status: varchar("status", { length: 20 }).notNull().default("DRAFT"),
+    status: varchar("status", { length: 30 }).notNull().default("DRAFT"),
+    createdBy: uuid("created_by").references(() => employees.id),
     openedAt: timestamp("opened_at"),
     openedBy: uuid("opened_by").references(() => employees.id),
     closedAt: timestamp("closed_at"),
@@ -35,12 +42,21 @@ export const evaluationPeriods = pgTable(
   },
   (table) => [
     check(
+      "period_type_check",
+      sql`${table.periodType} IN ('MONTHLY', 'QUARTERLY', 'SEMESTER', 'ANNUAL', 'CUSTOM')`,
+    ),
+    check(
       "period_status_check",
       sql`${table.status} IN ('DRAFT', 'OPEN', 'CLOSED', 'AWAITING_APPROVAL', 'FINALIZED')`,
     ),
     check("valid_period_dates", sql`${table.endDate} > ${table.startDate}`),
+    check(
+      "period_year_check",
+      sql`${table.year} >= 2020 AND ${table.year} <= 2100`,
+    ),
     index("idx_periods_status").on(table.status),
     index("idx_periods_dates").on(table.startDate, table.endDate),
+    index("idx_periods_year_type").on(table.year, table.periodType),
   ],
 );
 
@@ -67,6 +83,11 @@ export const evaluationPeriodsRelations = relations(
   evaluationPeriods,
   ({ many, one }) => ({
     participants: many(periodParticipants),
+    createdByEmployee: one(employees, {
+      fields: [evaluationPeriods.createdBy],
+      references: [employees.id],
+      relationName: "created_by_employee",
+    }),
     openedByEmployee: one(employees, {
       fields: [evaluationPeriods.openedBy],
       references: [employees.id],
