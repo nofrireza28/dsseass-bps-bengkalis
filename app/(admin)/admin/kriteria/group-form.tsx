@@ -8,7 +8,6 @@ import {
   Loader2,
   ArrowLeft,
   AlertCircle,
-  CheckCircle2,
   Info,
   Lock,
   Plus,
@@ -38,78 +37,94 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-import { updateCriteriaAction } from "../../action";
+import { createCriteriaAction, updateCriteriaAction } from "./action";
 
-interface CriteriaInput {
-  id: string;
-  code: string;
-  name: string;
-  description: string;
-  weight: number;
-  hasSubCriteria: boolean;
-  isActive: boolean;
-}
+const FLOAT_TOLERANCE = 0.0001;
 
-interface SubCriteriaInput {
-  id: string;
+interface SubCriteriaState {
+  id: string; // existing UUID atau temp-* untuk yang baru
   code: string;
   name: string;
   description: string;
   weight: number;
   type: "BENEFIT" | "COST";
-}
-
-interface SubCriteriaState extends SubCriteriaInput {
   isNew: boolean;
   markedForDeletion: boolean;
 }
 
-interface CriteriaEditFormProps {
-  criteria: CriteriaInput;
-  subCriteria: SubCriteriaInput[];
+interface GroupFormProps {
+  mode: "create" | "edit";
+  initial?: {
+    id: string;
+    code: string;
+    name: string;
+    description: string;
+    isActive: boolean;
+    subs: Omit<SubCriteriaState, "isNew" | "markedForDeletion">[];
+  };
+  otherLeafWeight: number;
   isLocked: boolean;
   lockReason: string | null;
   hasFinalizedPeriods: boolean;
 }
 
-const FLOAT_TOLERANCE = 0.0001;
-
-export function CriteriaEditForm({
-  criteria,
-  subCriteria: initialSubs,
+export function GroupForm({
+  mode,
+  initial,
+  otherLeafWeight,
   isLocked,
   lockReason,
   hasFinalizedPeriods,
-}: CriteriaEditFormProps) {
+}: GroupFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
-  const [name, setName] = useState(criteria.name);
-  const [description, setDescription] = useState(criteria.description);
-  const [weight, setWeight] = useState(criteria.weight);
-  const [isActive, setIsActive] = useState(criteria.isActive);
+  const [code, setCode] = useState(initial?.code ?? "");
+  const [name, setName] = useState(initial?.name ?? "");
+  const [description, setDescription] = useState(initial?.description ?? "");
+  const [isActive, setIsActive] = useState(initial?.isActive ?? false);
 
-  // Sub-kriteria dengan flag isNew & markedForDeletion
-  const [subs, setSubs] = useState<SubCriteriaState[]>(
-    initialSubs.map((s) => ({ ...s, isNew: false, markedForDeletion: false })),
-  );
+  const [subs, setSubs] = useState<SubCriteriaState[]>(() => {
+    if (initial?.subs && initial.subs.length > 0) {
+      return initial.subs.map((s) => ({
+        ...s,
+        isNew: false,
+        markedForDeletion: false,
+      }));
+    }
+    // Default 1 sub kosong untuk create mode
+    return [
+      {
+        id: `temp-${Date.now()}`,
+        code: "",
+        name: "",
+        description: "",
+        weight: 0,
+        type: "BENEFIT",
+        isNew: true,
+        markedForDeletion: false,
+      },
+    ];
+  });
 
-  // Active subs (yang tidak ditandai untuk dihapus)
   const activeSubs = useMemo(
     () => subs.filter((s) => !s.markedForDeletion),
     [subs],
   );
 
-  const subTotalWeight = useMemo(
-    () => activeSubs.reduce((sum, s) => sum + (Number(s.weight) || 0), 0),
+  const groupWeight = useMemo(
+    () => activeSubs.reduce((s, sc) => s + (Number(sc.weight) || 0), 0),
     [activeSubs],
   );
-  const subWeightValid = Math.abs(subTotalWeight - 1.0) < FLOAT_TOLERANCE;
+
+  const totalLeafWeight = groupWeight + otherLeafWeight;
+  const totalValid =
+    !isActive || Math.abs(totalLeafWeight - 1.0) < FLOAT_TOLERANCE;
 
   const handleSubChange = (
     index: number,
-    field: keyof SubCriteriaInput,
+    field: keyof SubCriteriaState,
     value: string | number,
   ) => {
     setSubs((prev) =>
@@ -126,13 +141,12 @@ export function CriteriaEditForm({
   };
 
   const handleAddSub = () => {
-    const existingSubs = subs.filter((s) => !s.markedForDeletion);
-    const nextNum = existingSubs.length + 1;
+    const nextNum = activeSubs.length + 1;
     setSubs((prev) => [
       ...prev,
       {
-        id: `temp-${Date.now()}`,
-        code: `${criteria.code}-S${nextNum}`,
+        id: `temp-${Date.now()}-${nextNum}`,
+        code: code ? `${code}-${nextNum}` : "",
         name: "",
         description: "",
         weight: 0,
@@ -144,15 +158,9 @@ export function CriteriaEditForm({
   };
 
   const handleRemoveSub = (index: number) => {
-    if (activeSubs.length === 1) return; // Min 1 sub-kriteria
+    if (activeSubs.length === 1) return;
     setSubs((prev) =>
-      prev.map((s, i) => {
-        if (i !== index) return s;
-        // Kalau isNew, hapus langsung dari state
-        // Kalau existing, mark for deletion (akan dihapus saat submit)
-        if (s.isNew) return { ...s, markedForDeletion: true };
-        return { ...s, markedForDeletion: true };
-      }),
+      prev.map((s, i) => (i !== index ? s : { ...s, markedForDeletion: true })),
     );
   };
 
@@ -167,9 +175,9 @@ export function CriteriaEditForm({
   const handleSubmit = () => {
     setError(null);
 
-    if (!subWeightValid) {
+    if (isActive && !totalValid) {
       setError(
-        `Total bobot sub-kriteria harus 100% (saat ini ${(subTotalWeight * 100).toFixed(2)}%)`,
+        `Total bobot leaf harus 100% (saat ini ${(totalLeafWeight * 100).toFixed(2)}%)`,
       );
       toast.error("Validasi gagal");
       return;
@@ -178,15 +186,26 @@ export function CriteriaEditForm({
     const formData = new FormData();
     formData.set("name", name);
     formData.set("description", description);
-    formData.set("weight", String(weight));
     formData.set("isActive", String(isActive));
     formData.set("subCriteriaData", JSON.stringify(subs));
 
+    if (mode === "create") {
+      formData.set("code", code);
+      formData.set("isGroup", "true");
+    }
+
     startTransition(async () => {
-      const result = await updateCriteriaAction(criteria.id, formData);
+      const result =
+        mode === "create"
+          ? await createCriteriaAction(formData)
+          : await updateCriteriaAction(initial!.id, formData);
 
       if (result.success) {
-        toast.success("Kriteria berhasil diperbarui");
+        toast.success(
+          mode === "create"
+            ? "Kriteria grup berhasil dibuat"
+            : "Kriteria berhasil diperbarui",
+        );
         router.push("/admin/kriteria");
         router.refresh();
       } else {
@@ -196,27 +215,29 @@ export function CriteriaEditForm({
     });
   };
 
+  const title =
+    mode === "create"
+      ? "Tambah Kriteria GRUP"
+      : `Edit Kriteria ${initial?.code}`;
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" asChild>
-          <Link href="/admin/kriteria">
+          <Link
+            href={mode === "create" ? "/admin/kriteria/new" : "/admin/kriteria"}
+          >
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Edit Kriteria</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
           <p className="text-muted-foreground mt-1">
-            <Badge variant="outline" className="font-mono mr-2">
-              {criteria.code}
-            </Badge>
-            Perubahan akan mempengaruhi perhitungan ranking di periode
-            berikutnya
+            Kriteria grup dengan sub-kriteria yang dinilai multi-rater
           </p>
         </div>
       </div>
 
-      {/* Lock warning */}
       {isLocked && (
         <div className="rounded-md border-l-4 border-l-destructive bg-destructive/10 px-4 py-3 text-sm">
           <div className="flex items-start gap-2">
@@ -229,8 +250,7 @@ export function CriteriaEditForm({
         </div>
       )}
 
-      {/* Finalized warning */}
-      {!isLocked && hasFinalizedPeriods && (
+      {!isLocked && hasFinalizedPeriods && mode === "edit" && (
         <div className="rounded-md border-l-4 border-l-amber-500 bg-amber-50 px-4 py-3 text-sm">
           <div className="flex items-start gap-2">
             <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
@@ -239,33 +259,30 @@ export function CriteriaEditForm({
                 Perhatian: Ada Periode yang Sudah Disahkan
               </p>
               <p className="mt-1">
-                Perubahan bobot tidak akan mempengaruhi hasil ranking yang sudah
-                disahkan. Sistem menyimpan snapshot perhitungan di tabel{" "}
+                Perubahan tidak akan mempengaruhi hasil ranking yang sudah
+                disahkan (snapshot disimpan di{" "}
                 <code className="text-xs bg-amber-100 px-1 rounded">
                   ranking_results
                 </code>
-                , sehingga data historis tetap akurat.
+                ).
               </p>
             </div>
           </div>
         </div>
       )}
 
-      {/* Info banner */}
       {!isLocked && (
         <div className="rounded-md border-l-4 border-l-blue-500 bg-blue-50 px-4 py-3 text-sm">
           <div className="flex items-start gap-2">
             <Info className="h-4 w-4 text-blue-600 mt-0.5 shrink-0" />
             <div className="text-blue-900">
-              <p className="font-medium">Aturan:</p>
+              <p className="font-medium">Model Leaf-Based:</p>
               <ul className="list-disc list-inside mt-1 space-y-0.5">
-                <li>Total bobot sub-kriteria harus 100%</li>
-                <li>Total bobot semua kriteria aktif harus 100%</li>
-                <li>Minimal 1 sub-kriteria per kriteria</li>
+                <li>Bobot induk grup = jumlah bobot sub-kriteria (otomatis)</li>
                 <li>
-                  Sub-kriteria yang sudah dipakai di penilaian tidak dapat
-                  dihapus
+                  Total bobot leaf (semua sub + leaf criteria lain) harus 100%
                 </li>
+                <li>Minimal 1 sub-kriteria per grup</li>
               </ul>
             </div>
           </div>
@@ -273,21 +290,35 @@ export function CriteriaEditForm({
       )}
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        {/* Form Kriteria Induk */}
+        {/* Info Kriteria */}
         <Card>
           <CardHeader>
-            <CardTitle>Kriteria Induk</CardTitle>
+            <CardTitle>Info Kriteria Grup</CardTitle>
             <CardDescription>
-              Informasi utama kriteria {criteria.code}
+              Bobot induk dihitung otomatis dari jumlah sub-kriteria
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
             <div className="space-y-2">
-              <Label>Kode</Label>
-              <Input value={criteria.code} disabled className="font-mono" />
-              <p className="text-xs text-muted-foreground">
-                Kode kriteria tidak dapat diubah
-              </p>
+              <Label htmlFor="code">
+                Kode <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="code"
+                value={code}
+                onChange={(e) =>
+                  mode === "create" && setCode(e.target.value.toUpperCase())
+                }
+                disabled={isPending || isLocked || mode === "edit"}
+                className="font-mono uppercase"
+                placeholder="PRO, INT, dst"
+                required
+              />
+              {mode === "edit" && (
+                <p className="text-xs text-muted-foreground">
+                  Kode tidak dapat diubah setelah dibuat
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -315,25 +346,14 @@ export function CriteriaEditForm({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="weight">
-                Bobot <span className="text-destructive">*</span>
-              </Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  id="weight"
-                  type="number"
-                  step="0.0001"
-                  min="0.0001"
-                  max="1"
-                  value={weight}
-                  onChange={(e) => setWeight(parseFloat(e.target.value) || 0)}
-                  disabled={isPending || isLocked}
-                  required
-                  className="font-mono"
-                />
-                <Badge variant="outline" className="shrink-0">
-                  = {(weight * 100).toFixed(2)}%
-                </Badge>
+              <Label>Bobot Grup (otomatis)</Label>
+              <div className="flex items-center gap-2 p-3 rounded-md bg-muted">
+                <span className="text-2xl font-bold font-mono">
+                  {(groupWeight * 100).toFixed(2)}%
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  = jumlah {activeSubs.length} sub-kriteria
+                </span>
               </div>
             </div>
 
@@ -352,36 +372,53 @@ export function CriteriaEditForm({
                   Kriteria Aktif
                 </label>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Hanya kriteria aktif yang dipakai dalam perhitungan ranking
+                  Hanya kriteria aktif yang dipakai dalam perhitungan
                 </p>
+              </div>
+            </div>
+
+            {/* Live total leaf summary */}
+            <div className="border-t pt-4 mt-4 space-y-2">
+              <div className="text-xs text-muted-foreground">
+                Ringkasan Bobot Leaf:
+              </div>
+              <div className="space-y-1 text-sm">
+                <div className="flex justify-between">
+                  <span>Bobot grup ini:</span>
+                  <span className="font-mono">
+                    {(groupWeight * 100).toFixed(2)}%
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Bobot leaf lain:</span>
+                  <span className="font-mono">
+                    {(otherLeafWeight * 100).toFixed(2)}%
+                  </span>
+                </div>
+                <div className="flex justify-between font-medium border-t pt-1">
+                  <span>Total:</span>
+                  <span
+                    className={`font-mono ${
+                      totalValid ? "text-green-600" : "text-destructive"
+                    }`}
+                  >
+                    {(totalLeafWeight * 100).toFixed(2)}%
+                    {totalValid ? " ✓" : " (harus 100%)"}
+                  </span>
+                </div>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Form Sub-Kriteria */}
+        {/* Sub-Kriteria */}
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle>Sub-Kriteria ({activeSubs.length})</CardTitle>
-                <CardDescription>Total bobot harus tepat 100%</CardDescription>
+                <CardDescription>Yang dinilai multi-rater</CardDescription>
               </div>
-              <Badge
-                variant="outline"
-                className={
-                  subWeightValid
-                    ? "bg-green-100 text-green-800"
-                    : "bg-red-100 text-red-800"
-                }
-              >
-                {subWeightValid ? (
-                  <CheckCircle2 className="mr-1 h-3 w-3" />
-                ) : (
-                  <AlertCircle className="mr-1 h-3 w-3" />
-                )}
-                {(subTotalWeight * 100).toFixed(2)}%
-              </Badge>
             </div>
           </CardHeader>
           <CardContent>
@@ -400,7 +437,7 @@ export function CriteriaEditForm({
                             variant="outline"
                             className="font-mono line-through"
                           >
-                            {sub.code}
+                            {sub.code || "(tanpa kode)"}
                           </Badge>
                           <span className="text-sm text-muted-foreground line-through">
                             {sub.name}
@@ -430,61 +467,38 @@ export function CriteriaEditForm({
                     }`}
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        {sub.isNew ? (
-                          <Input
-                            value={sub.code}
-                            onChange={(e) =>
-                              handleSubChange(
-                                index,
-                                "code",
-                                e.target.value.toUpperCase(),
-                              )
-                            }
-                            disabled={isPending || isLocked}
-                            className="font-mono text-sm w-32"
-                            placeholder={`${criteria.code}-S?`}
-                          />
-                        ) : (
-                          <Badge variant="outline" className="font-mono">
-                            {sub.code}
-                          </Badge>
-                        )}
+                      <div className="flex items-center gap-2 flex-1">
+                        <Input
+                          value={sub.code}
+                          onChange={(e) =>
+                            handleSubChange(
+                              index,
+                              "code",
+                              e.target.value.toUpperCase(),
+                            )
+                          }
+                          disabled={isPending || isLocked}
+                          className="font-mono text-sm w-32"
+                          placeholder={`${code || "XXX"}-1`}
+                        />
                         {sub.isNew && (
                           <Badge className="bg-green-100 text-green-800 border-green-200 text-xs">
                             Baru
                           </Badge>
                         )}
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Badge
-                          variant="outline"
-                          className={
-                            sub.type === "BENEFIT"
-                              ? "bg-green-50 text-green-700 border-green-200 text-xs"
-                              : "bg-orange-50 text-orange-700 border-orange-200 text-xs"
-                          }
+                      {activeSubs.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleRemoveSub(index)}
+                          disabled={isPending || isLocked}
+                          className="text-destructive hover:text-destructive h-8 w-8"
                         >
-                          {sub.type === "BENEFIT" ? (
-                            <TrendingUp className="mr-1 h-3 w-3" />
-                          ) : (
-                            <TrendingDown className="mr-1 h-3 w-3" />
-                          )}
-                          {sub.type}
-                        </Badge>
-                        {activeSubs.length > 1 && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleRemoveSub(index)}
-                            disabled={isPending || isLocked}
-                            className="text-destructive hover:text-destructive h-8 w-8"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        )}
-                      </div>
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      )}
                     </div>
 
                     <div className="space-y-2">
@@ -524,9 +538,7 @@ export function CriteriaEditForm({
                             onChange={(e) =>
                               handleSubChange(index, "weight", e.target.value)
                             }
-                            disabled={
-                              isPending || isLocked || activeSubs.length === 1
-                            }
+                            disabled={isPending || isLocked}
                             required
                             className="font-mono"
                           />
@@ -549,8 +561,18 @@ export function CriteriaEditForm({
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="BENEFIT">BENEFIT</SelectItem>
-                            <SelectItem value="COST">COST</SelectItem>
+                            <SelectItem value="BENEFIT">
+                              <div className="flex items-center gap-2">
+                                <TrendingUp className="h-3 w-3 text-green-600" />
+                                BENEFIT
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="COST">
+                              <div className="flex items-center gap-2">
+                                <TrendingDown className="h-3 w-3 text-orange-600" />
+                                COST
+                              </div>
+                            </SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -583,7 +605,7 @@ export function CriteriaEditForm({
       <div className="flex gap-3">
         <Button
           onClick={handleSubmit}
-          disabled={isPending || !subWeightValid || isLocked}
+          disabled={isPending || isLocked || (isActive && !totalValid)}
           className="bg-bps-primary hover:bg-bps-primary/90"
         >
           {isPending ? (
@@ -591,6 +613,8 @@ export function CriteriaEditForm({
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Menyimpan...
             </>
+          ) : mode === "create" ? (
+            "Buat Kriteria"
           ) : (
             "Simpan Perubahan"
           )}

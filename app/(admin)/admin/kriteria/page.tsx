@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import {
   getBlockingPeriod,
   formatBlockedMessage,
+  getCurrentTotalLeafWeight,
 } from "@/lib/criteria-helpers";
 
 import { CriteriaList } from "./criteria-list";
@@ -35,16 +36,19 @@ export default async function KriteriaPage() {
     {} as Record<string, typeof allSubCriteria>,
   );
 
-  const activeCriteria = allCriteria.filter((c) => c.isActive);
-  const totalActiveWeight = activeCriteria.reduce(
-    (sum, c) => sum + parseFloat(c.weight),
-    0,
-  );
-  const isWeightValid = Math.abs(totalActiveWeight - 1.0) < 0.0001;
+  // Hitung total leaf weight
+  const totalLeafWeight = await getCurrentTotalLeafWeight();
+  const isWeightValid = Math.abs(totalLeafWeight - 1.0) < 0.0001;
 
-  // Cek periode aktif
+  // Gate periode
   const blocking = await getBlockingPeriod();
   const isLocked = !!blocking;
+
+  // Hitung statistik
+  const activeCriteria = allCriteria.filter((c) => c.isActive);
+  const groupCount = activeCriteria.filter((c) => c.hasSubCriteria).length;
+  const leafCount = activeCriteria.filter((c) => !c.hasSubCriteria).length;
+  const totalSubItems = allSubCriteria.length;
 
   return (
     <div className="space-y-6">
@@ -54,7 +58,7 @@ export default async function KriteriaPage() {
             Manajemen Kriteria
           </h1>
           <p className="text-muted-foreground mt-1">
-            Kriteria dan sub-kriteria penilaian pegawai
+            Kriteria penilaian pegawai (model leaf-based)
           </p>
         </div>
         <Button
@@ -100,18 +104,18 @@ export default async function KriteriaPage() {
             )}
             <div className="flex-1">
               <div className="text-sm font-medium">
-                Total Bobot Kriteria Aktif:{" "}
+                Total Bobot Leaf:{" "}
                 <span
                   className={
                     isWeightValid ? "text-green-600" : "text-destructive"
                   }
                 >
-                  {(totalActiveWeight * 100).toFixed(2)}%
+                  {(totalLeafWeight * 100).toFixed(2)}%
                 </span>
               </div>
               <div className="text-xs text-muted-foreground">
-                {activeCriteria.length} kriteria aktif dari {allCriteria.length}{" "}
-                total · {allSubCriteria.length} sub-kriteria
+                {activeCriteria.length} kriteria aktif ({groupCount} grup +{" "}
+                {leafCount} leaf) · {totalSubItems} sub-kriteria
               </div>
             </div>
           </div>
@@ -123,9 +127,11 @@ export default async function KriteriaPage() {
         <div className="flex items-start gap-2">
           <Info className="h-4 w-4 text-blue-600 mt-0.5 shrink-0" />
           <div className="text-blue-900">
-            Kriteria dan bobot ditetapkan oleh BPS Pusat. Perubahan struktur
-            hanya boleh dilakukan saat tidak ada periode penilaian yang sedang
-            berjalan.
+            <strong>Model Leaf-Based:</strong> Bobot setiap &quot;leaf
+            item&quot; (sub-kriteria dari grup, atau kriteria yang dinilai
+            langsung) bersifat absolut. Total semua bobot leaf harus 100%.
+            Kriteria induk grup hanya pengelompokan informatif — bobotnya =
+            jumlah sub-nya.
           </div>
         </div>
       </div>
