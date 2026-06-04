@@ -17,7 +17,13 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   STATUS_LABELS,
   STATUS_COLORS,
@@ -30,6 +36,12 @@ import {
   getParticipantCount,
   getAvailableEmployeeCount,
 } from "@/lib/participant-helpers";
+import {
+  validatePreOpen,
+  validatePreClose,
+} from "@/lib/period-validation-helpers";
+import { OpenPeriodDialog } from "./open-period-dialog";
+import { ClosePeriodDialog } from "./close-period-dialog";
 
 interface DetailPageProps {
   params: Promise<{ id: string }>;
@@ -86,6 +98,13 @@ export default async function PeriodDetailPage({ params }: DetailPageProps) {
     getAvailableEmployeeCount(period.id),
   ]);
 
+  // Fetch validation hanya kalau status DRAFT (untuk dialog buka periode)
+  const validation =
+    period.status === "DRAFT" ? await validatePreOpen(period.id) : null;
+
+  const preCloseValidation =
+    period.status === "OPEN" ? await validatePreClose(period.id) : null;
+
   return (
     <div className="space-y-6 max-w-4xl">
       <div className="flex items-start gap-3">
@@ -105,12 +124,21 @@ export default async function PeriodDetailPage({ params }: DetailPageProps) {
           </div>
         </div>
         {isDraft && (
-          <Button asChild variant="outline">
-            <Link href={`/admin/periode/${period.id}/edit`}>
-              <Pencil className="mr-2 h-4 w-4" />
-              Edit
-            </Link>
-          </Button>
+          <div className="flex gap-2">
+            <Button asChild variant="outline">
+              <Link href={`/admin/periode/${period.id}/edit`}>
+                <Pencil className="mr-2 h-4 w-4" />
+                Edit
+              </Link>
+            </Button>
+            {validation && (
+              <OpenPeriodDialog
+                periodId={period.id}
+                periodName={period.name}
+                validation={validation}
+              />
+            )}
+          </div>
         )}
       </div>
 
@@ -161,6 +189,90 @@ export default async function PeriodDetailPage({ params }: DetailPageProps) {
           </dl>
         </CardContent>
       </Card>
+      {period.status === "OPEN" && preCloseValidation && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Status & Aksi Periode</CardTitle>
+            <CardDescription>
+              Periode sedang berjalan. Pantau progres pengisian dan tutup
+              setelah 100% lengkap.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Progress Subjektif */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-sm">
+                <span className="font-medium">
+                  Penilaian Subjektif (Multi-Rater)
+                </span>
+                <span className="text-muted-foreground">
+                  {preCloseValidation.stats.submittedEvaluations}/
+                  {preCloseValidation.stats.totalEvaluations} (
+                  {preCloseValidation.stats.subjectivePercentage}%)
+                </span>
+              </div>
+              <div className="h-2 w-full overflow-hidden rounded-full bg-secondary">
+                <div
+                  className={`h-full transition-all ${
+                    preCloseValidation.stats.subjectivePercentage === 100
+                      ? "bg-green-600"
+                      : "bg-blue-600"
+                  }`}
+                  style={{
+                    width: `${preCloseValidation.stats.subjectivePercentage}%`,
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Progress Objektif */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-sm">
+                <span className="font-medium">
+                  Penilaian Objektif (CKP, Absensi)
+                </span>
+                <span className="text-muted-foreground">
+                  {preCloseValidation.stats.filledObjectiveScores}/
+                  {preCloseValidation.stats.totalObjectiveScores} (
+                  {preCloseValidation.stats.objectivePercentage}%)
+                </span>
+              </div>
+              <div className="h-2 w-full overflow-hidden rounded-full bg-secondary">
+                <div
+                  className={`h-full transition-all ${
+                    preCloseValidation.stats.objectivePercentage === 100
+                      ? "bg-green-600"
+                      : "bg-blue-600"
+                  }`}
+                  style={{
+                    width: `${preCloseValidation.stats.objectivePercentage}%`,
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex flex-wrap gap-2 pt-2">
+              <Button variant="outline" asChild>
+                <Link href={`/admin/periode/${period.id}/kelengkapan`}>
+                  Lihat Detail Kelengkapan
+                </Link>
+              </Button>
+              <ClosePeriodDialog
+                periodId={period.id}
+                validation={preCloseValidation}
+              />
+            </div>
+
+            {!preCloseValidation.allPassed && (
+              <p className="text-xs text-muted-foreground">
+                Tombol &quot;Tutup Periode&quot; akan aktif setelah semua
+                penilaian mencapai 100%.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Audit Trail */}
       <Card>
