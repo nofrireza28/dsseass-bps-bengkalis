@@ -12,7 +12,7 @@ import { auth } from "@/auth"; // sesuaikan path
 import { db } from "@/db";
 import { employees } from "@/db/schema";
 import {
-  getCurrentOpenPeriod,
+  getCurrentActivePeriod,
   getMyEvaluationsAsEvaluator,
   getMyProgressStats,
   type EvaluationListItem,
@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Info } from "lucide-react";
 
 export default async function PenilaianPage() {
   // 1. Auth
@@ -50,7 +51,7 @@ export default async function PenilaianPage() {
   }
 
   // 3. Get periode aktif
-  const period = await getCurrentOpenPeriod();
+  const period = await getCurrentActivePeriod();
 
   // Empty state: tidak ada periode OPEN
   if (!period) {
@@ -91,6 +92,17 @@ export default async function PenilaianPage() {
           Periode: <span className="font-medium">{period.name}</span>
         </p>
       </div>
+
+      {period.status !== "OPEN" && (
+        <div className="flex items-start gap-2 rounded-md border bg-muted/30 p-3 text-sm">
+          <Info className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+          <p className="text-muted-foreground">
+            Periode penilaian sudah <span className="font-medium">ditutup</span>
+            . Anda hanya dapat melihat penilaian yang telah diisi, tidak dapat
+            mengubahnya.
+          </p>
+        </div>
+      )}
 
       {/* Progress summary */}
       <Card>

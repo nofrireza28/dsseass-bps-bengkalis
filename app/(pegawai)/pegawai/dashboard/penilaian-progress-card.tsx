@@ -5,7 +5,7 @@ import { auth } from "@/auth"; // sesuaikan path
 import { db } from "@/db";
 import { employees } from "@/db/schema";
 import {
-  getCurrentOpenPeriod,
+  getCurrentActivePeriod,
   getMyProgressStats,
 } from "@/lib/evaluation-helpers";
 import {
@@ -28,7 +28,7 @@ export async function PenilaianProgressCard() {
   if (!employee) return null;
 
   // 2. Periode aktif
-  const period = await getCurrentOpenPeriod();
+  const period = await getCurrentActivePeriod();
 
   // Tidak ada periode aktif → card informatif (atau ganti `return null` kalau mau disembunyikan)
   if (!period) {
@@ -91,7 +91,7 @@ export async function PenilaianProgressCard() {
               Semua penilaian selesai
             </p>
             <Button variant="outline" size="sm" asChild>
-              <Link href="/dashboard/penilaian">Lihat</Link>
+              <Link href="/pegawai/penilaian">Lihat</Link>
             </Button>
           </div>
         ) : (
@@ -102,7 +102,7 @@ export async function PenilaianProgressCard() {
                 : "Mulai menilai rekan kerja Anda"}
             </p>
             <Button size="sm" asChild>
-              <Link href="/dashboard/penilaian">
+              <Link href="/pegawai/penilaian">
                 {progress.submitted > 0 || progress.inProgress > 0
                   ? "Lanjutkan"
                   : "Mulai Nilai"}

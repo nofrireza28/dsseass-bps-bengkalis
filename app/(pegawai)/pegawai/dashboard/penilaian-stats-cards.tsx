@@ -4,7 +4,7 @@ import { auth } from "@/auth"; // sesuaikan path
 import { db } from "@/db";
 import { employees } from "@/db/schema";
 import {
-  getCurrentOpenPeriod,
+  getCurrentActivePeriod,
   getMyProgressStats,
 } from "@/lib/evaluation-helpers";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,7 +25,7 @@ export async function PenilaianStatsCards() {
     });
 
     if (employee) {
-      const period = await getCurrentOpenPeriod();
+      const period = await getCurrentActivePeriod();
       if (period) {
         periodName = period.name;
         const progress = await getMyProgressStats(employee.id, period.id);

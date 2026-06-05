@@ -381,3 +381,19 @@ export async function getEvaluationsForAdmin(
     status: r.status as "DRAFT" | "SUBMITTED",
   }));
 }
+
+/**
+ * Periode "aktif" dalam siklus hidup: OPEN, CLOSED, atau AWAITING_APPROVAL.
+ * Karena aturan 1-periode-aktif, fungsi ini mengembalikan paling banyak 1 periode.
+ * Dipakai agar pegawai tetap bisa MELIHAT penilaian walau periode sudah ditutup.
+ */
+export async function getCurrentActivePeriod() {
+  return await db.query.evaluationPeriods.findFirst({
+    where: inArray(evaluationPeriods.status, [
+      "OPEN",
+      "CLOSED",
+      "AWAITING_APPROVAL",
+    ]),
+    orderBy: (periods, { desc }) => [desc(periods.startDate)],
+  });
+}

@@ -42,6 +42,7 @@ import {
 } from "@/lib/period-validation-helpers";
 import { OpenPeriodDialog } from "./open-period-dialog";
 import { ClosePeriodDialog } from "./close-period-dialog";
+import { getPeriodCompletionStats } from "@/lib/period-completion-helpers";
 
 interface DetailPageProps {
   params: Promise<{ id: string }>;
@@ -104,6 +105,12 @@ export default async function PeriodDetailPage({ params }: DetailPageProps) {
 
   const preCloseValidation =
     period.status === "OPEN" ? await validatePreClose(period.id) : null;
+
+  const completionStats =
+    period.status === "DRAFT"
+      ? null
+      : (preCloseValidation?.stats ??
+        (await getPeriodCompletionStats(period.id)));
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -189,13 +196,18 @@ export default async function PeriodDetailPage({ params }: DetailPageProps) {
           </dl>
         </CardContent>
       </Card>
-      {period.status === "OPEN" && preCloseValidation && (
+      {completionStats && (
         <Card>
           <CardHeader>
-            <CardTitle>Status & Aksi Periode</CardTitle>
+            <CardTitle>
+              {period.status === "OPEN"
+                ? "Status & Aksi Periode"
+                : "Ringkasan Kelengkapan Penilaian"}
+            </CardTitle>
             <CardDescription>
-              Periode sedang berjalan. Pantau progres pengisian dan tutup
-              setelah 100% lengkap.
+              {period.status === "OPEN"
+                ? "Periode sedang berjalan. Pantau progres dan tutup setelah 100%."
+                : "Periode sudah ditutup. Data bersifat baca-saja."}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -206,21 +218,19 @@ export default async function PeriodDetailPage({ params }: DetailPageProps) {
                   Penilaian Subjektif (Multi-Rater)
                 </span>
                 <span className="text-muted-foreground">
-                  {preCloseValidation.stats.submittedEvaluations}/
-                  {preCloseValidation.stats.totalEvaluations} (
-                  {preCloseValidation.stats.subjectivePercentage}%)
+                  {completionStats.submittedEvaluations}/
+                  {completionStats.totalEvaluations} (
+                  {completionStats.subjectivePercentage}%)
                 </span>
               </div>
               <div className="h-2 w-full overflow-hidden rounded-full bg-secondary">
                 <div
                   className={`h-full transition-all ${
-                    preCloseValidation.stats.subjectivePercentage === 100
+                    completionStats.subjectivePercentage === 100
                       ? "bg-green-600"
                       : "bg-blue-600"
                   }`}
-                  style={{
-                    width: `${preCloseValidation.stats.subjectivePercentage}%`,
-                  }}
+                  style={{ width: `${completionStats.subjectivePercentage}%` }}
                 />
               </div>
             </div>
@@ -232,26 +242,24 @@ export default async function PeriodDetailPage({ params }: DetailPageProps) {
                   Penilaian Objektif (CKP, Absensi)
                 </span>
                 <span className="text-muted-foreground">
-                  {preCloseValidation.stats.filledObjectiveScores}/
-                  {preCloseValidation.stats.totalObjectiveScores} (
-                  {preCloseValidation.stats.objectivePercentage}%)
+                  {completionStats.filledObjectiveScores}/
+                  {completionStats.totalObjectiveScores} (
+                  {completionStats.objectivePercentage}%)
                 </span>
               </div>
               <div className="h-2 w-full overflow-hidden rounded-full bg-secondary">
                 <div
                   className={`h-full transition-all ${
-                    preCloseValidation.stats.objectivePercentage === 100
+                    completionStats.objectivePercentage === 100
                       ? "bg-green-600"
                       : "bg-blue-600"
                   }`}
-                  style={{
-                    width: `${preCloseValidation.stats.objectivePercentage}%`,
-                  }}
+                  style={{ width: `${completionStats.objectivePercentage}%` }}
                 />
               </div>
             </div>
 
-            {/* Action buttons */}
+            {/* Links — tetap relevan untuk semua status non-DRAFT */}
             <div className="flex flex-wrap gap-2 pt-2">
               <Button variant="outline" asChild>
                 <Link href={`/admin/periode/${period.id}/kelengkapan`}>
@@ -263,18 +271,20 @@ export default async function PeriodDetailPage({ params }: DetailPageProps) {
                   Audit Penilaian
                 </Link>
               </Button>
-              <ClosePeriodDialog
-                periodId={period.id}
-                validation={preCloseValidation}
-              />
-            </div>
+              <Button variant="outline" asChild>
+                <Link href={`/admin/periode/${period.id}/penilaian-objektif`}>
+                  Penilaian Objektif
+                </Link>
+              </Button>
 
-            {!preCloseValidation.allPassed && (
-              <p className="text-xs text-muted-foreground">
-                Tombol &quot;Tutup Periode&quot; akan aktif setelah semua
-                penilaian mencapai 100%.
-              </p>
-            )}
+              {/* Tombol Tutup HANYA saat OPEN */}
+              {period.status === "OPEN" && preCloseValidation && (
+                <ClosePeriodDialog
+                  periodId={period.id}
+                  validation={preCloseValidation}
+                />
+              )}
+            </div>
           </CardContent>
         </Card>
       )}
