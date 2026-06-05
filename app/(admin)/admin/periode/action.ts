@@ -1,7 +1,12 @@
 "use server";
 
 import { db } from "@/db";
-import { evaluationPeriods, employees, periodParticipants } from "@/db/schema";
+import {
+  evaluationPeriods,
+  employees,
+  periodParticipants,
+  evaluations,
+} from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
@@ -469,6 +474,91 @@ export async function closePeriodAction(periodId: string) {
     return {
       success: false as const,
       error: error instanceof Error ? error.message : "Gagal menutup periode",
+    };
+  }
+}
+
+/**
+ * Buka kembali penilaian yang sudah SUBMITTED → DRAFT.
+ * Untuk koreksi kesalahan pengisian oleh pegawai (kasus darurat).
+ * Syarat: periode masih OPEN.
+ */
+export async function unsubmitEvaluationAction(evaluationId: string) {
+  // 1. Auth ADMIN
+  const session = await auth();
+  if (!session?.user) {
+    return { success: false as const, error: "Tidak terautentikasi" };
+  }
+  const userRoles = session.user.roles ?? [];
+  if (!userRoles.includes("ADMIN")) {
+    return {
+      success: false as const,
+      error: "Hanya admin yang dapat membuka kunci penilaian",
+    };
+  }
+
+  // 2. Get evaluation + period status
+  const evaluation = await db
+    .select({
+      id: evaluations.id,
+      periodId: evaluations.periodId,
+      status: evaluations.status,
+      periodStatus: evaluationPeriods.status,
+    })
+    .from(evaluations)
+    .innerJoin(
+      evaluationPeriods,
+      eq(evaluationPeriods.id, evaluations.periodId),
+    )
+    .where(eq(evaluations.id, evaluationId))
+    .limit(1);
+
+  if (evaluation.length === 0) {
+    return { success: false as const, error: "Penilaian tidak ditemukan" };
+  }
+
+  const ev = evaluation[0];
+
+  // 3. Periode harus OPEN
+  if (ev.periodStatus !== "OPEN") {
+    return {
+      success: false as const,
+      error:
+        "Periode bukan OPEN. Penilaian tidak dapat dibuka kembali karena periode sudah ditutup.",
+    };
+  }
+
+  // 4. Status harus SUBMITTED
+  if (ev.status !== "SUBMITTED") {
+    return {
+      success: false as const,
+      error: "Penilaian belum berstatus SUBMITTED, tidak perlu dibuka.",
+    };
+  }
+
+  // 5. Update SUBMITTED → DRAFT
+  try {
+    await db
+      .update(evaluations)
+      .set({
+        status: "DRAFT",
+        submittedAt: null,
+        updatedAt: new Date(),
+      })
+      .where(eq(evaluations.id, evaluationId));
+
+    revalidatePath(`/admin/periode/${ev.periodId}/evaluasi`);
+    revalidatePath(`/admin/periode/${ev.periodId}/kelengkapan`);
+    revalidatePath(`/admin/periode/${ev.periodId}`);
+
+    return { success: true as const };
+  } catch (error) {
+    return {
+      success: false as const,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Gagal membuka kunci penilaian",
     };
   }
 }

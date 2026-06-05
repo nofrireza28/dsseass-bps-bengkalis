@@ -258,6 +258,11 @@ export default async function PeriodDetailPage({ params }: DetailPageProps) {
                   Lihat Detail Kelengkapan
                 </Link>
               </Button>
+              <Button variant="outline" asChild>
+                <Link href={`/admin/periode/${period.id}/evaluasi`}>
+                  Audit Penilaian
+                </Link>
+              </Button>
               <ClosePeriodDialog
                 periodId={period.id}
                 validation={preCloseValidation}
