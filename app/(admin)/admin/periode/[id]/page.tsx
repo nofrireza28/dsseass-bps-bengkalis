@@ -277,6 +277,14 @@ export default async function PeriodDetailPage({ params }: DetailPageProps) {
                 </Link>
               </Button>
 
+              {period.status !== "OPEN" && period.status !== "DRAFT" && (
+                <Button variant="default" asChild>
+                  <Link href={`/admin/periode/${period.id}/ranking`}>
+                    Hasil Ranking
+                  </Link>
+                </Button>
+              )}
+
               {/* Tombol Tutup HANYA saat OPEN */}
               {period.status === "OPEN" && preCloseValidation && (
                 <ClosePeriodDialog
