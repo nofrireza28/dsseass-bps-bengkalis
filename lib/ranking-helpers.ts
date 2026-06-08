@@ -4,6 +4,7 @@ import {
   criteria,
   subCriteria,
   evaluations,
+  evaluationPeriods,
   evaluationScores,
   objectiveScores,
   rankingCalculations,
@@ -285,4 +286,11 @@ export async function getCurrentRanking(
       normalizedScores: (r.normalizedScores as Record<string, number>) ?? {},
     })),
   };
+}
+
+export async function getPeriodsAwaitingApproval() {
+  return db.query.evaluationPeriods.findMany({
+    where: eq(evaluationPeriods.status, "AWAITING_APPROVAL"),
+    orderBy: (p, { desc }) => [desc(p.awaitingApprovalAt)],
+  });
 }

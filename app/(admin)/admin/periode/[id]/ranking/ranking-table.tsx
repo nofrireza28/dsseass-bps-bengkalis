@@ -3,12 +3,13 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Trophy,
   Calculator,
   Loader2,
-  Eye,
   AlertTriangle,
   RefreshCw,
+  Send,
+  Clock,
+  CheckCircle2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,22 +21,16 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { calculateRankingAction } from "./action";
-import type { CurrentRanking, RankingResultRow } from "@/lib/ranking-helpers";
+import { RankingResultsTable } from "@/components/shared/ranking-results-table";
+import { calculateRankingAction, submitForApprovalAction } from "./action";
+import type { CurrentRanking } from "@/lib/ranking-helpers";
 
 interface Props {
   periodId: string;
@@ -48,7 +43,10 @@ export function RankingView({ periodId, periodStatus, ranking }: Props) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
-  const [detail, setDetail] = useState<RankingResultRow | null>(null);
+
+  const [showSubmit, setShowSubmit] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isSubmitting, startSubmit] = useTransition();
 
   const canCalculate = periodStatus === "CLOSED";
   const hasRanking = ranking !== null;
@@ -64,6 +62,19 @@ export function RankingView({ periodId, periodStatus, ranking }: Props) {
         router.refresh();
       } else {
         setError(res.error);
+      }
+    });
+  }
+
+  function handleSubmit() {
+    setSubmitError(null);
+    startSubmit(async () => {
+      const res = await submitForApprovalAction(periodId);
+      if (res.success) {
+        setShowSubmit(false);
+        router.refresh();
+      } else {
+        setSubmitError(res.error);
       }
     });
   }
@@ -118,7 +129,7 @@ export function RankingView({ periodId, periodStatus, ranking }: Props) {
         </div>
       )}
 
-      {/* Hasil */}
+      {/* Hasil ranking (komponen bersama) */}
       {!hasRanking ? (
         <Card>
           <CardContent className="py-12 text-center text-sm text-muted-foreground">
@@ -127,140 +138,76 @@ export function RankingView({ periodId, periodStatus, ranking }: Props) {
           </CardContent>
         </Card>
       ) : (
+        <RankingResultsTable
+          results={ranking.results}
+          metaCriteria={metaCriteria}
+        />
+      )}
+
+      {/* Ajukan pengesahan */}
+      {hasRanking && periodStatus === "CLOSED" && (
         <Card>
           <CardHeader>
-            <CardTitle>Peringkat Pegawai</CardTitle>
+            <CardTitle className="text-base">Ajukan Pengesahan</CardTitle>
             <CardDescription>
-              {ranking.results.length} pegawai · metode SAW (normalisasi max
-              kolom)
+              Jika hasil ranking sudah sesuai, ajukan ke Pimpinan untuk
+              disahkan. Setelah diajukan, periode terkunci dan ranking tidak
+              dapat dihitung ulang.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-16 text-center">Rank</TableHead>
-                  <TableHead>Nama</TableHead>
-                  <TableHead className="text-center">Penilai</TableHead>
-                  <TableHead className="text-right">Nilai (V)</TableHead>
-                  <TableHead className="text-right">Rincian</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {ranking.results.map((r) => (
-                  <TableRow
-                    key={r.employeeId}
-                    className={
-                      r.rankPosition === 1
-                        ? "bg-amber-50 dark:bg-amber-950/20"
-                        : ""
-                    }
-                  >
-                    <TableCell className="text-center font-bold">
-                      {r.rankPosition === 1 ? (
-                        <Trophy className="mx-auto h-4 w-4 text-amber-500" />
-                      ) : (
-                        r.rankPosition
-                      )}
-                    </TableCell>
-                    <TableCell className="font-medium">
-                      {r.employeeName}
-                      {r.employeePosition && (
-                        <div className="text-xs text-muted-foreground">
-                          {r.employeePosition}
-                        </div>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-center tabular-nums">
-                      {r.totalEvaluators}
-                    </TableCell>
-                    <TableCell className="text-right font-mono tabular-nums">
-                      {(+parseFloat(r.finalScore)).toFixed(6)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setDetail(r)}
-                      >
-                        <Eye className="mr-1 h-3 w-3" />
-                        Lihat
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <Button onClick={() => setShowSubmit(true)} disabled={isSubmitting}>
+              <Send className="mr-2 h-4 w-4" />
+              Submit untuk Pengesahan
+            </Button>
           </CardContent>
         </Card>
       )}
 
-      {/* Dialog rincian SAW per pegawai (transparansi) */}
+      {periodStatus === "AWAITING_APPROVAL" && (
+        <div className="flex items-start gap-2 rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-700 dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-300">
+          <Clock className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>
+            Periode ini telah diajukan dan sedang menunggu pengesahan Pimpinan.
+          </span>
+        </div>
+      )}
+      {periodStatus === "FINALIZED" && (
+        <div className="flex items-start gap-2 rounded-md border border-green-200 bg-green-50 p-3 text-sm text-green-700 dark:border-green-900 dark:bg-green-950/30 dark:text-green-300">
+          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>Hasil ranking periode ini telah disahkan oleh Pimpinan.</span>
+        </div>
+      )}
+
+      {/* Dialog konfirmasi submit */}
       <Dialog
-        open={detail !== null}
-        onOpenChange={(o) => !o && setDetail(null)}
+        open={showSubmit}
+        onOpenChange={(o) => !o && setShowSubmit(false)}
       >
-        <DialogContent className="max-w-2xl">
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle>
-              Rincian Perhitungan SAW — {detail?.employeeName}
-            </DialogTitle>
+            <DialogTitle>Submit untuk Pengesahan?</DialogTitle>
             <DialogDescription>
-              Peringkat #{detail?.rankPosition} · V ={" "}
-              {detail ? (+parseFloat(detail.finalScore)).toFixed(6) : ""}
+              Periode akan dikunci dan dikirim ke Pimpinan untuk disahkan.
+              Ranking tidak dapat dihitung ulang setelah ini. Lanjutkan?
             </DialogDescription>
           </DialogHeader>
-          {detail && (
-            <div className="max-h-[60vh] overflow-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Kriteria</TableHead>
-                    <TableHead className="text-right">Nilai (x)</TableHead>
-                    <TableHead className="text-right">Norm (r)</TableHead>
-                    <TableHead className="text-right">Bobot (w)</TableHead>
-                    <TableHead className="text-right">w·r</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {metaCriteria.map((c) => {
-                    const x = detail.aggregatedScores[c.id] ?? 0;
-                    const r = detail.normalizedScores[c.id] ?? 0;
-                    const w = c.normalizedWeight;
-                    return (
-                      <TableRow key={c.id}>
-                        <TableCell>
-                          {c.name}
-                          <div className="text-xs text-muted-foreground">
-                            {c.code}
-                            {c.type === "COST" ? " · cost" : ""}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right tabular-nums">
-                          {+x.toFixed(2)}
-                        </TableCell>
-                        <TableCell className="text-right tabular-nums">
-                          {r.toFixed(6)}
-                        </TableCell>
-                        <TableCell className="text-right tabular-nums">
-                          {w.toFixed(4)}
-                        </TableCell>
-                        <TableCell className="text-right tabular-nums">
-                          {(w * r).toFixed(6)}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-              <div className="mt-2 flex justify-end gap-2 border-t pt-3 text-sm font-bold">
-                <span>Total V =</span>
-                <span className="font-mono">
-                  {(+parseFloat(detail.finalScore)).toFixed(6)}
-                </span>
-              </div>
-            </div>
-          )}
+          {submitError && <p className="text-sm text-red-600">{submitError}</p>}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowSubmit(false)}
+              disabled={isSubmitting}
+            >
+              Batal
+            </Button>
+            <Button onClick={handleSubmit} disabled={isSubmitting}>
+              {isSubmitting && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              Ya, Submit
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>

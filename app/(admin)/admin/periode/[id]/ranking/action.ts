@@ -151,3 +151,67 @@ export async function calculateRankingAction(periodId: string, notes?: string) {
       : null,
   };
 }
+
+/**
+ * Ajukan periode untuk pengesahan: CLOSED → AWAITING_APPROVAL.
+ * Prasyarat: status CLOSED & ranking sudah dihitung (ada kalkulasi current).
+ */
+export async function submitForApprovalAction(periodId: string) {
+  const session = await auth();
+  if (!session?.user) {
+    return { success: false as const, error: "Tidak terautentikasi" };
+  }
+  if (!(session.user.roles ?? []).includes("ADMIN")) {
+    return {
+      success: false as const,
+      error: "Hanya admin yang dapat mengajukan pengesahan",
+    };
+  }
+
+  const period = await db.query.evaluationPeriods.findFirst({
+    where: eq(evaluationPeriods.id, periodId),
+  });
+  if (!period) {
+    return { success: false as const, error: "Periode tidak ditemukan" };
+  }
+  if (period.status !== "CLOSED") {
+    return {
+      success: false as const,
+      error: `Hanya periode CLOSED yang dapat diajukan. Status saat ini: ${period.status}.`,
+    };
+  }
+
+  // Prasyarat: ranking sudah dihitung
+  const calc = await db.query.rankingCalculations.findFirst({
+    where: and(
+      eq(rankingCalculations.periodId, periodId),
+      eq(rankingCalculations.isCurrent, true),
+    ),
+  });
+  if (!calc) {
+    return {
+      success: false as const,
+      error: "Hitung ranking terlebih dahulu sebelum mengajukan pengesahan.",
+    };
+  }
+
+  try {
+    await db
+      .update(evaluationPeriods)
+      .set({
+        status: "AWAITING_APPROVAL",
+        awaitingApprovalAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(evaluationPeriods.id, periodId));
+  } catch (e) {
+    return {
+      success: false as const,
+      error: e instanceof Error ? e.message : "Gagal mengajukan pengesahan",
+    };
+  }
+
+  revalidatePath(`/admin/periode/${periodId}`);
+  revalidatePath(`/admin/periode/${periodId}/ranking`);
+  return { success: true as const };
+}
