@@ -294,3 +294,10 @@ export async function getPeriodsAwaitingApproval() {
     orderBy: (p, { desc }) => [desc(p.awaitingApprovalAt)],
   });
 }
+
+export async function getFinalizedPeriods() {
+  return db.query.evaluationPeriods.findMany({
+    where: eq(evaluationPeriods.status, "FINALIZED"),
+    orderBy: (p, { desc }) => [desc(p.finalizedAt)],
+  });
+}

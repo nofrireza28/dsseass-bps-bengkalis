@@ -15,7 +15,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
+import { MobileSidebar } from "./mobile-sidebar";
+import type { SidebarRole } from "./menu-config";
 import { logoutAction } from "@/app/(auth)/logout/action";
 import Link from "next/link";
 
@@ -85,7 +86,10 @@ export function DashboardHeader({
     <header className="h-16 bg-white border-b flex items-center justify-between px-4 lg:px-6">
       {/* Left: Page title placeholder (akan diisi context) */}
       <div className="flex-1">
-        {/* Sidebar mobile trigger akan ditambahkan di sini nanti */}
+        <MobileSidebar
+          role={currentRole as SidebarRole}
+          roleLabel={roleLabel}
+        />
       </div>
       <div className="flex items-center gap-3">
         {/* Role Switcher - hanya muncul kalau user punya lebih dari 1 role */}

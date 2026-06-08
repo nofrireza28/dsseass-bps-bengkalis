@@ -4,59 +4,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
-import {
-  LayoutDashboard,
-  Users,
-  KeyRound,
-  Sliders,
-  Calendar,
-  ClipboardList,
-  Calculator,
-  CheckCircle2,
-  FileText,
-  Trophy,
-  Eye,
-  type LucideIcon,
-} from "lucide-react";
+import { MENU_BY_ROLE, DASHBOARD_BY_ROLE } from "./menu-config";
+import type { SidebarRole } from "./menu-config";
 
-interface MenuItem {
-  label: string;
-  href: string;
-  icon: LucideIcon;
-}
-
-export type SidebarRole = "PEGAWAI" | "ADMIN" | "PIMPINAN";
-
-const MENU_BY_ROLE: Record<SidebarRole, MenuItem[]> = {
-  PEGAWAI: [
-    { label: "Dashboard", href: "/pegawai/dashboard", icon: LayoutDashboard },
-    { label: "Penilaian", href: "/pegawai/penilaian", icon: ClipboardList },
-    { label: "Hasil Ranking", href: "/pegawai/ranking", icon: Trophy },
-  ],
-  ADMIN: [
-    { label: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
-    { label: "Pegawai", href: "/admin/pegawai", icon: Users },
-    { label: "Akun Pengguna", href: "/admin/akun", icon: KeyRound },
-    { label: "Kriteria", href: "/admin/kriteria", icon: Sliders },
-    { label: "Periode", href: "/admin/periode", icon: Calendar },
-    { label: "Perhitungan", href: "/admin/perhitungan", icon: Calculator },
-    { label: "Audit Penilaian", href: "/admin/audit", icon: Eye },
-    { label: "Laporan", href: "/admin/laporan", icon: FileText },
-  ],
-  PIMPINAN: [
-    { label: "Dashboard", href: "/pimpinan/dashboard", icon: LayoutDashboard },
-    { label: "Pengesahan", href: "/pimpinan/pengesahan", icon: CheckCircle2 },
-    { label: "Hasil Ranking", href: "/pimpinan/ranking", icon: Trophy },
-    { label: "Laporan", href: "/pimpinan/laporan", icon: FileText },
-  ],
-};
-
-// Mapping URL dashboard per role
-const DASHBOARD_BY_ROLE: Record<SidebarRole, string> = {
-  PEGAWAI: "/pegawai/dashboard",
-  ADMIN: "/admin/dashboard",
-  PIMPINAN: "/pimpinan/dashboard",
-};
+export type { SidebarRole }; // re-export agar import lama tetap bekerja
 
 interface SidebarProps {
   role: SidebarRole;
@@ -70,7 +21,6 @@ export function Sidebar({ role, roleLabel }: SidebarProps) {
 
   return (
     <aside className="hidden lg:flex lg:flex-col w-64 bg-bps-primary text-white border-r border-blue-900/20">
-      {/* Logo & Title */}
       <div className="p-6 border-b border-white/10">
         <Link
           href={dashboardUrl}
@@ -93,19 +43,16 @@ export function Sidebar({ role, roleLabel }: SidebarProps) {
         </Link>
       </div>
 
-      {/* Role badge */}
       <div className="px-4 py-3 border-b border-white/10">
         <div className="text-xs text-blue-200 mb-1">Login sebagai</div>
         <div className="text-sm font-semibold text-bps-accent">{roleLabel}</div>
       </div>
 
-      {/* Navigation */}
       <nav className="flex-1 overflow-y-auto p-3 space-y-1">
         {menuItems.map((item) => {
           const isActive =
             pathname === item.href || pathname.startsWith(`${item.href}/`);
           const Icon = item.icon;
-
           return (
             <Link
               key={item.href}
@@ -124,7 +71,6 @@ export function Sidebar({ role, roleLabel }: SidebarProps) {
         })}
       </nav>
 
-      {/* Footer */}
       <div className="p-4 border-t border-white/10 text-xs text-blue-200/70">
         © {new Date().getFullYear()} BPS Bengkalis
       </div>
