@@ -5,28 +5,27 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { evaluationPeriods } from "@/db/schema";
 import { getCurrentRanking } from "@/lib/ranking-helpers";
-import { PodiumTop3 } from "@/components/shared/podium-top3";
+import { PodiumTop3 } from "./podium-top3";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
-interface PageProps {
-  params: Promise<{ id: string }>;
-}
-
-export default async function HasilDetailPage({ params }: PageProps) {
-  const { id: periodId } = await params;
-
+export async function HasilDetail({
+  periodId,
+  backPath,
+}: {
+  periodId: string;
+  backPath: string;
+}) {
   const period = await db.query.evaluationPeriods.findFirst({
     where: eq(evaluationPeriods.id, periodId),
   });
   if (!period) notFound();
 
-  // Hanya periode FINALIZED yang boleh tampil ke publik
   if (period.status !== "FINALIZED") {
     return (
       <div className="space-y-4">
         <Button variant="ghost" size="sm" asChild className="-ml-2">
-          <Link href="/hasil">
+          <Link href={backPath}>
             <ArrowLeft className="mr-1 h-4 w-4" />
             Kembali
           </Link>
@@ -47,7 +46,7 @@ export default async function HasilDetailPage({ params }: PageProps) {
     <div className="space-y-6">
       <div>
         <Button variant="ghost" size="sm" asChild className="-ml-2 mb-2">
-          <Link href="/hasil">
+          <Link href={backPath}>
             <ArrowLeft className="mr-1 h-4 w-4" />
             Kembali
           </Link>

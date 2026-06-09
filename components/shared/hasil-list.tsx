@@ -10,7 +10,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-export default async function HasilPage() {
+export async function HasilList({ basePath }: { basePath: string }) {
   const periods = await getFinalizedPeriods();
 
   return (
@@ -49,7 +49,7 @@ export default async function HasilPage() {
               </CardHeader>
               <CardContent>
                 <Button asChild className="w-full">
-                  <Link href={`/hasil/${p.id}`}>
+                  <Link href={`${basePath}/${p.id}`}>
                     Lihat Pemenang
                     <ArrowRight className="ml-1 h-4 w-4" />
                   </Link>

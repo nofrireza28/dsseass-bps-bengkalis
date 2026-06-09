@@ -22,7 +22,7 @@ export const MENU_BY_ROLE: Record<SidebarRole, MenuItem[]> = {
   PEGAWAI: [
     { label: "Dashboard", href: "/pegawai/dashboard", icon: LayoutDashboard },
     { label: "Penilaian", href: "/pegawai/penilaian", icon: ClipboardList },
-    { label: "Pengumuman Hasil", href: "/hasil", icon: Trophy },
+    { label: "Pengumuman Hasil", href: "/pegawai/hasil", icon: Trophy },
   ],
   ADMIN: [
     { label: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
@@ -30,12 +30,12 @@ export const MENU_BY_ROLE: Record<SidebarRole, MenuItem[]> = {
     { label: "Akun Pengguna", href: "/admin/akun", icon: KeyRound },
     { label: "Kriteria", href: "/admin/kriteria", icon: Sliders },
     { label: "Periode", href: "/admin/periode", icon: Calendar },
-    { label: "Pengumuman Hasil", href: "/hasil", icon: Trophy },
+    { label: "Pengumuman Hasil", href: "/admin/hasil", icon: Trophy },
   ],
   PIMPINAN: [
     { label: "Dashboard", href: "/pimpinan/dashboard", icon: LayoutDashboard },
     { label: "Pengesahan", href: "/pimpinan/pengesahan", icon: CheckCircle2 },
-    { label: "Pengumuman Hasil", href: "/hasil", icon: Trophy },
+    { label: "Pengumuman Hasil", href: "/pimpinan/hasil", icon: Trophy },
   ],
 };
 
