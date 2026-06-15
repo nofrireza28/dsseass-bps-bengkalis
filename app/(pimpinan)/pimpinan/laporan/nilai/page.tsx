@@ -1,24 +1,11 @@
 // app/(pimpinan)/pimpinan/laporan/nilai/page.tsx
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { LaporanNilai } from "@/components/shared/laporan-nilai";
 
-export default function Page() {
-  return (
-    <div className="space-y-4">
-      <Button variant="ghost" size="sm" asChild className="-ml-2">
-        <Link href="/pimpinan/laporan">
-          <ArrowLeft className="mr-1 h-4 w-4" />
-          Kembali
-        </Link>
-      </Button>
-      <Card>
-        <CardContent className="py-12 text-center text-sm text-muted-foreground">
-          Laporan Daftar Nilai sedang disiapkan (Tahap 2: tabel data + export
-          Excel &amp; PDF).
-        </CardContent>
-      </Card>
-    </div>
-  );
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<{ periodId?: string }>;
+}) {
+  const { periodId } = await searchParams;
+  return <LaporanNilai basePath="/pimpinan/laporan" periodId={periodId} />;
 }

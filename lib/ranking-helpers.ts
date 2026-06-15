@@ -301,3 +301,20 @@ export async function getFinalizedPeriods() {
     orderBy: (p, { desc }) => [desc(p.finalizedAt)],
   });
 }
+
+/** Daftar periode yang sudah memiliki hasil perhitungan (untuk pemilih laporan). */
+export async function getPeriodsWithRanking() {
+  return db
+    .selectDistinct({
+      id: evaluationPeriods.id,
+      name: evaluationPeriods.name,
+      status: evaluationPeriods.status,
+    })
+    .from(rankingCalculations)
+    .innerJoin(
+      evaluationPeriods,
+      eq(evaluationPeriods.id, rankingCalculations.periodId),
+    )
+    .where(eq(rankingCalculations.isCurrent, true))
+    .orderBy(asc(evaluationPeriods.name));
+}
