@@ -89,6 +89,8 @@ export async function calculateRankingAction(periodId: string, notes?: string) {
     weightSum: output.weightSum,
     criteria: output.criteriaMeta,
     totalAlternatives: output.results.length,
+    tieBreakApplied: output.tieBreakApplied,
+    hasTrueTie: output.hasTrueTie,
     generatedAt: new Date().toISOString(),
   };
 

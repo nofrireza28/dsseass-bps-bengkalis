@@ -38,39 +38,94 @@ const RANK_STYLES: RankStyle[] = [
   },
 ];
 
+function TieBadge() {
+  return (
+    <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
+      Seri
+    </span>
+  );
+}
+
 export function PodiumTop3({ results }: Props) {
-  const champion = results[0];
-  const runnersUp = results.slice(1, 3);
+  if (results.length === 0) return null;
+
+  // Status seri diturunkan dari rankPosition yang dihuni lebih dari satu pegawai.
+  const rankCount = results.reduce<Record<number, number>>((acc, r) => {
+    acc[r.rankPosition] = (acc[r.rankPosition] ?? 0) + 1;
+    return acc;
+  }, {});
+  const isTied = (rank: number) => (rankCount[rank] ?? 0) > 1;
+
+  const minRank = Math.min(...results.map((r) => r.rankPosition));
+  const champions = results.filter((r) => r.rankPosition === minRank);
+  const runnersUp = results.filter((r) => r.rankPosition !== minRank);
+
+  // Kasus juara seri: tampilkan semua juara, serahkan keputusan ke panitia.
+  if (champions.length > 1) {
+    return (
+      <div className="space-y-4">
+        <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-center text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/20 dark:text-amber-200">
+          Terdapat <strong>{champions.length} pegawai</strong> dengan nilai
+          tertinggi yang identik (seri). Penetapan Pegawai Terbaik diputuskan
+          oleh panitia.
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {champions.map((r) => (
+            <Card
+              key={r.employeeId}
+              className={`border-2 ${RANK_STYLES[0].border} ${RANK_STYLES[0].bg}`}
+            >
+              <CardContent className="flex flex-col items-center gap-2 py-6 text-center">
+                <Trophy className={`h-9 w-9 ${RANK_STYLES[0].text}`} />
+                <div
+                  className={`flex items-center gap-2 text-xs font-semibold uppercase tracking-wider ${RANK_STYLES[0].text}`}
+                >
+                  {RANK_STYLES[0].label} <TieBadge />
+                </div>
+                <div className="text-lg font-bold">{r.employeeName}</div>
+                {r.employeePosition && (
+                  <div className="text-xs text-muted-foreground">
+                    {r.employeePosition}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Kasus normal: satu juara + runner-up.
+  const champion = champions[0];
+  const topRunners = runnersUp.slice(0, 2);
 
   return (
     <div className="space-y-4">
-      {/* Juara 1 */}
-      {champion && (
-        <Card
-          className={`border-2 ${RANK_STYLES[0].border} ${RANK_STYLES[0].bg}`}
-        >
-          <CardContent className="flex flex-col items-center gap-3 py-8 text-center">
-            <Trophy className={`h-12 w-12 ${RANK_STYLES[0].text}`} />
-            <div
-              className={`text-xs font-semibold uppercase tracking-wider ${RANK_STYLES[0].text}`}
-            >
-              {RANK_STYLES[0].label}
+      <Card
+        className={`border-2 ${RANK_STYLES[0].border} ${RANK_STYLES[0].bg}`}
+      >
+        <CardContent className="flex flex-col items-center gap-3 py-8 text-center">
+          <Trophy className={`h-12 w-12 ${RANK_STYLES[0].text}`} />
+          <div
+            className={`text-xs font-semibold uppercase tracking-wider ${RANK_STYLES[0].text}`}
+          >
+            {RANK_STYLES[0].label}
+          </div>
+          <div className="text-2xl font-bold">{champion.employeeName}</div>
+          {champion.employeePosition && (
+            <div className="text-sm text-muted-foreground">
+              {champion.employeePosition}
             </div>
-            <div className="text-2xl font-bold">{champion.employeeName}</div>
-            {champion.employeePosition && (
-              <div className="text-sm text-muted-foreground">
-                {champion.employeePosition}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
+          )}
+        </CardContent>
+      </Card>
 
-      {/* Peringkat 2 & 3 */}
-      {runnersUp.length > 0 && (
+      {topRunners.length > 0 && (
         <div className="grid gap-4 sm:grid-cols-2">
-          {runnersUp.map((r, i) => {
-            const style = RANK_STYLES[i + 1];
+          {topRunners.map((r) => {
+            const style =
+              RANK_STYLES[Math.min(r.rankPosition - 1, RANK_STYLES.length - 1)];
             const Icon = style.icon;
             return (
               <Card
@@ -80,9 +135,9 @@ export function PodiumTop3({ results }: Props) {
                 <CardContent className="flex flex-col items-center gap-2 py-6 text-center">
                   <Icon className={`h-8 w-8 ${style.text}`} />
                   <div
-                    className={`text-xs font-semibold uppercase tracking-wider ${style.text}`}
+                    className={`flex items-center gap-2 text-xs font-semibold uppercase tracking-wider ${style.text}`}
                   >
-                    {style.label}
+                    {style.label} {isTied(r.rankPosition) && <TieBadge />}
                   </div>
                   <div className="text-lg font-bold">{r.employeeName}</div>
                   {r.employeePosition && (

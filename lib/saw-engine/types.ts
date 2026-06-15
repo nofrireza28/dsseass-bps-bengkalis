@@ -27,7 +27,8 @@ export interface SawResultRow {
   normalizedScores: Record<string, number>; // r_ij
   weightedScores: Record<string, number>; // w_j * r_ij
   finalScore: number; // V_i ∈ [0,1]
-  rankPosition: number; // 1 = terbaik
+  rankPosition: number; // 1 = terbaik; bisa sama antar pegawai bila seri sejati
+  tied: boolean; // true bila berbagi rankPosition dengan pegawai lain (seri sejati)
   totalEvaluators: number;
 }
 
@@ -46,4 +47,8 @@ export interface SawOutput {
   results: SawResultRow[]; // sudah terurut by rankPosition
   criteriaMeta: SawCriterionMeta[];
   weightSum: number;
+  /** Lapis 1: true bila ada skor akhir (V) seri yang dipisahkan via tie-break kriteria. */
+  tieBreakApplied: boolean;
+  /** Lapis 2: true bila ada peringkat sama (seri sejati — seluruh kriteria identik). */
+  hasTrueTie: boolean;
 }

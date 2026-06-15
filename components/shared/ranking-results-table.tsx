@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Trophy, Eye } from "lucide-react";
+import { Trophy, Eye, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -34,6 +34,14 @@ interface Props {
   description?: string;
 }
 
+function TieBadge() {
+  return (
+    <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
+      Seri
+    </span>
+  );
+}
+
 export function RankingResultsTable({
   results,
   metaCriteria,
@@ -41,6 +49,14 @@ export function RankingResultsTable({
   description,
 }: Props) {
   const [detail, setDetail] = useState<RankingResultRow | null>(null);
+
+  // Turunkan status seri dari rankPosition yang dihuni lebih dari satu pegawai.
+  const rankCount = results.reduce<Record<number, number>>((acc, r) => {
+    acc[r.rankPosition] = (acc[r.rankPosition] ?? 0) + 1;
+    return acc;
+  }, {});
+  const isTied = (rank: number) => (rankCount[rank] ?? 0) > 1;
+  const hasTie = results.some((r) => isTied(r.rankPosition));
 
   return (
     <Card>
@@ -52,6 +68,16 @@ export function RankingResultsTable({
         </CardDescription>
       </CardHeader>
       <CardContent>
+        {hasTie && (
+          <div className="mb-4 flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/20 dark:text-amber-200">
+            <Info className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>
+              Terdapat peringkat <strong>seri</strong> (nilai akhir identik).
+              Penetapan final pada peringkat yang seri diserahkan kepada
+              keputusan panitia.
+            </span>
+          </div>
+        )}
         <Table>
           <TableHeader>
             <TableRow>
@@ -78,7 +104,10 @@ export function RankingResultsTable({
                   )}
                 </TableCell>
                 <TableCell className="font-medium">
-                  {r.employeeName}
+                  <div className="flex items-center gap-2">
+                    <span>{r.employeeName}</span>
+                    {isTied(r.rankPosition) && <TieBadge />}
+                  </div>
                   {r.employeePosition && (
                     <div className="text-xs text-muted-foreground">
                       {r.employeePosition}
@@ -117,7 +146,8 @@ export function RankingResultsTable({
               Rincian Perhitungan SAW — {detail?.employeeName}
             </DialogTitle>
             <DialogDescription>
-              Peringkat #{detail?.rankPosition} · V ={" "}
+              Peringkat #{detail?.rankPosition}
+              {detail && isTied(detail.rankPosition) ? " (seri)" : ""} · V ={" "}
               {detail ? (+parseFloat(detail.finalScore)).toFixed(6) : ""}
             </DialogDescription>
           </DialogHeader>

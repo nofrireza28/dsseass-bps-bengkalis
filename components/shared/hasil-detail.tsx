@@ -40,7 +40,14 @@ export async function HasilDetail({
   }
 
   const ranking = await getCurrentRanking(periodId);
-  const top3 = ranking?.results.slice(0, 3) ?? [];
+  const allResults = ranking?.results ?? [];
+
+  // Ambil semua pegawai pada 3 peringkat unik teratas (bukan 3 baris pertama),
+  // agar pegawai yang seri pada suatu peringkat ikut terbawa seluruhnya.
+  const topRanks = [...new Set(allResults.map((r) => r.rankPosition))]
+    .sort((a, b) => a - b)
+    .slice(0, 3);
+  const top3 = allResults.filter((r) => topRanks.includes(r.rankPosition));
 
   return (
     <div className="space-y-6">
