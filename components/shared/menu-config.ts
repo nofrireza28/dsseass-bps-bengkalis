@@ -7,6 +7,7 @@ import {
   ClipboardList,
   CheckCircle2,
   Trophy,
+  FileBarChart,
   type LucideIcon,
 } from "lucide-react";
 
@@ -31,11 +32,13 @@ export const MENU_BY_ROLE: Record<SidebarRole, MenuItem[]> = {
     { label: "Kriteria", href: "/admin/kriteria", icon: Sliders },
     { label: "Periode", href: "/admin/periode", icon: Calendar },
     { label: "Pengumuman Hasil", href: "/admin/hasil", icon: Trophy },
+    { label: "Laporan", href: "/admin/laporan", icon: FileBarChart },
   ],
   PIMPINAN: [
     { label: "Dashboard", href: "/pimpinan/dashboard", icon: LayoutDashboard },
     { label: "Pengesahan", href: "/pimpinan/pengesahan", icon: CheckCircle2 },
     { label: "Pengumuman Hasil", href: "/pimpinan/hasil", icon: Trophy },
+    { label: "Laporan", href: "/pimpinan/laporan", icon: FileBarChart },
   ],
 };
 
