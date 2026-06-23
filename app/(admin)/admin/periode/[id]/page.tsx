@@ -403,14 +403,14 @@ export default async function PeriodDetailPage({ params }: DetailPageProps) {
       </Card>
 
       {/* Placeholder: Progress Penilaian */}
-      <Card className="border-dashed">
+      {/* <Card className="border-dashed">
         <CardContent className="py-8 text-center text-muted-foreground">
           <p className="text-sm">
             <strong>Dashboard Progress Penilaian</strong> akan ditampilkan di
             sini setelah Tahap 5 selesai.
           </p>
         </CardContent>
-      </Card>
+      </Card> */}
     </div>
   );
 }
