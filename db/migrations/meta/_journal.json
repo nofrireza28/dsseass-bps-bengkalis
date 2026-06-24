@@ -43,6 +43,13 @@
       "when": 1780537209914,
       "tag": "0005_gigantic_onslaught",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1782272809031,
+      "tag": "0006_complete_quicksilver",
+      "breakpoints": true
     }
   ]
 }
